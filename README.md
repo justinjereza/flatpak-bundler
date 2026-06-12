@@ -1,0 +1,5 @@
+Requirements
+============
+
+* GNU Make
+* Flatpak

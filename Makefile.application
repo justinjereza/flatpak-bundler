@@ -1,0 +1,7 @@
+.PHONY: $(FLATPAK_BUILD_DIR) clean
+
+$(FLATPAK_BUILD_DIR): $(FLATPAK_APP).yaml
+	flatpak run org.flatpak.Builder --force-clean $@ $<
+
+clean:
+	$(RM) --recursive .flatpak-builder $(FLATPAK_BUILD_DIR)

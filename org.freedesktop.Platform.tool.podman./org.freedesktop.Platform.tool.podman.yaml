@@ -1,0 +1,16 @@
+id: org.freedesktop.Platform.tool.podman
+runtime: org.freedesktop.Platform
+runtime-version: '25.08'
+sdk: org.freedesktop.Sdk
+build-extension: true
+build-options:
+  strip: true
+modules:
+  - name: podman-remote
+    buildsystem: simple
+    build-commands:
+      - install -D podman-remote-static-linux_amd64 ${FLATPAK_DEST}/bin/podman-remote
+    sources:
+      - type: archive
+        url: https://github.com/podman-container-tools/podman/releases/download/v5.8.2/podman-remote-static-linux_amd64.tar.gz
+        sha256: 88f7c21e8399a8f5edd1ef7b5c2e12b29706d0a4f24463f264a0e88d887ebbbf

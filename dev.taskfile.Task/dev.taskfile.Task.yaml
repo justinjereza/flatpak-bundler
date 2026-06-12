@@ -1,0 +1,33 @@
+id: dev.taskfile.Task
+runtime: org.freedesktop.Platform
+runtime-version: '25.08'
+sdk: org.freedesktop.Sdk
+command: task
+build-options:
+  strip: true
+cleanup-commands:
+  - mkdir --parents ${FLATPAK_DEST}/tools
+modules:
+  - name: task
+    buildsystem: simple
+    build-commands:
+      - install -D task ${FLATPAK_DEST}/bin/task
+    sources:
+      - type: archive
+        url: https://github.com/go-task/task/releases/download/v3.51.1/task_linux_amd64.tar.gz
+        sha256: da7e92f0ff961ef2aae7cfecbad8d1fd2a08d7b09ba968673adf7ff389b243b5
+        strip-components: 0
+  # - name: podman-remote
+  #   buildsystem: simple
+  #   build-commands:
+  #     - install -D podman-remote-static-linux_amd64 ${FLATPAK_DEST}/bin/podman-remote
+  #   sources:
+  #     - type: archive
+  #       url: https://github.com/podman-container-tools/podman/releases/download/v5.8.2/podman-remote-static-linux_amd64.tar.gz
+  #       sha256: 88f7c21e8399a8f5edd1ef7b5c2e12b29706d0a4f24463f264a0e88d887ebbbf
+add-extensions:
+  # org.freedesktop.Platform.tool:
+  dev.taskfile.Task.tool:
+    version: stable
+    directory: tools
+    subdirectories: true
