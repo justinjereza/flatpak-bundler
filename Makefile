@@ -1,73 +1,100 @@
-FLATPAK_APP_BRANCH ?= stable
-FLATPAK_PLATFORM_BRANCH = 25.08
-FLATPAK_APP_MAKEFILE = Makefile.application
+FLATPAK_USER ?= true
+FLATPAK_REF_BRANCH ?= stable
+FLATPAK_SDK_BRANCH ?= 25.08
 
-# FLATPAK_APPS = $(patsubst %/,%,$(wildcard */))
-FLATPAK_APPS = $(filter-out $(FLATPAK_ARTIFACTS_DIR) %.disabled,$(patsubst %/,%,$(wildcard */)))
-
+FLATPAK_APP_DIR ?= app
+FLATPAK_RUNTIME_DIR ?= runtime
+FLATPAK_BUILD_DIR ?= build
 FLATPAK_ARTIFACTS_DIR ?= artifacts
 FLATPAK_REPO_DIR ?= $(FLATPAK_ARTIFACTS_DIR)/repo
 FLATPAK_INSTALL_FLAGS ?= --assumeyes --or-update
 
-export FLATPAK_BUILD_DIR ?= build
+FLATPAK_REFS := $(filter-out %.disabled,$(patsubst %/,%,$(wildcard $(FLATPAK_APP_DIR)/*/ $(FLATPAK_RUNTIME_DIR)/*/)))
+
+ifneq ($(FLATPAK_USER), true)
+override undefine FLATPAK_USER
+endif
 
 .PHONY: all
-all: flatpak-prerequisites bundle
+all: requirements bundle
+
+.PHONY: requirements
+requirements: | org.freedesktop.Platform org.freedesktop.Sdk org.flatpak.Builder
 
 .PHONY: clean
-clean: $(foreach app,$(FLATPAK_APPS),$(app)-clean)
-# 	$(RM) --recursive $(FLATPAK_REPO_DIR)
+clean: $(foreach ref,$(FLATPAK_REFS),$(ref)-clean)
+	$(RM) --recursive $(FLATPAK_REPO_DIR)
 
 .PHONY: distclean
 distclean: clean
-	$(RM) --recursive $(FLATPAK_ARTIFACTS_DIR)
+	$(RM) --recursive $(FLATPAK_ARTIFACTS_DIR) .flatpak-builder/
 
 .PHONY: export
-export: $(foreach app,$(FLATPAK_APPS),$(app)-export)
+export: $(foreach ref,$(FLATPAK_REFS),$(ref)-export)
 
 .PHONY: bundle
-bundle: export $(foreach app,$(FLATPAK_APPS),$(FLATPAK_ARTIFACTS_DIR)/$(app).flatpak)
+bundle: $(foreach ref,$(FLATPAK_REFS),$(FLATPAK_ARTIFACTS_DIR)/$(shell echo $(ref) | sed 's,^.\+/,,').flatpak)
 
-.PHONY: flatpak-prerequisites
-flatpak-prerequisites: flathub org.freedesktop.Platform org.freedesktop.Sdk org.flatpak.Builder
+.PHONY: install
+install: $(foreach ref,$(FLATPAK_REFS),$(ref)-install)
+
+.PHONY: builder-export
+builder-export: $(foreach ref,$(FLATPAK_REFS),$(ref)-builder-export)
+
+.PHONY: builder-install
+builder-install: $(foreach ref,$(FLATPAK_REFS),$(ref)-builder-install)
 
 .PHONY: flathub
 flathub:
 	flatpak remote-add --if-not-exists $@ https://dl.flathub.org/repo/flathub.flatpakrepo
 
 .PHONY: org.freedesktop.Platform org.freedesktop.Sdk
-org.freedesktop.Platform org.freedesktop.Sdk:
-	flatpak install $(FLATPAK_INSTALL_FLAGS) $@//$(FLATPAK_PLATFORM_BRANCH)
+org.freedesktop.Platform org.freedesktop.Sdk: flathub
+	flatpak install $(FLATPAK_INSTALL_FLAGS) $@//$(FLATPAK_SDK_BRANCH)
 
 .PHONY: org.flatpak.Builder
-org.flatpak.Builder:
+org.flatpak.Builder: flathub
 	flatpak install $(FLATPAK_INSTALL_FLAGS) $@
 
-$(FLATPAK_ARTIFACTS_DIR):
-	mkdir $(FLATPAK_ARTIFACTS_DIR)
+$(FLATPAK_REPO_DIR):
+	mkdir --parents $@
 
-define APP_RULE_GENERATOR
-.PHONY: $(1)/Makefile
-$(1)/Makefile:
-	ln --force --symbolic ../$(FLATPAK_APP_MAKEFILE) $$@
-
-.PHONY: $(1)
-$(1): export FLATPAK_APP = $(1)
-$(1): $(1)/Makefile
-	$(MAKE) --directory=$$@
-
+define REF_RULE_GENERATOR
 .PHONY: $(1)-clean
-$(1)-clean: export FLATPAK_APP = $(1)
-$(1)-clean: $(1)/Makefile
-	$(MAKE) --directory=$(1) clean
-	$(RM) $$<
+$(1)-clean:
+	$(RM) --recursive $(1)/$(FLATPAK_BUILD_DIR)
+
+.PHONY: $(1)-build
+$(1)-build:
+	flatpak run org.flatpak.Builder --build-only --force-clean $(1)/$(FLATPAK_BUILD_DIR) $(1)/$$(patsubst %-build,%,$$(@F)).yaml
+
+.PHONY: $(1)-finish
+$(1)-finish: $(1)-build
+	flatpak run org.flatpak.Builder --finish-only $(1)/$(FLATPAK_BUILD_DIR) $(1)/$$(patsubst %-finish,%,$$(@F)).yaml
 
 .PHONY: $(1)-export
-$(1)-export: $(1) $(FLATPAK_ARTIFACTS_DIR)
-	flatpak build-export $(FLATPAK_REPO_DIR) $(1)/$(FLATPAK_BUILD_DIR) $(FLATPAK_APP_BRANCH)
+$(1)-export: $(1)-finish | $(FLATPAK_REPO_DIR)
+	flatpak build-export $(FLATPAK_REPO_DIR) $(1)/$(FLATPAK_BUILD_DIR) $(FLATPAK_REF_BRANCH)
 
-$(FLATPAK_ARTIFACTS_DIR)/$(1).flatpak: $(1)-export
-	flatpak build-bundle $(FLATPAK_REPO_DIR) $$@ $(1) $(FLATPAK_APP_BRANCH)
+$(FLATPAK_ARTIFACTS_DIR)/$(shell echo $(1) | sed 's,^.\+/,,').flatpak: RUNTIME := $(if $(findstring runtime/,$(1)),true)
+$(FLATPAK_ARTIFACTS_DIR)/$(shell echo $(1) | sed 's,^.\+/,,').flatpak: $(1)-export
+	flatpak build-bundle $(FLATPAK_REPO_DIR) $$(if $$(RUNTIME),--runtime) $$@ \
+		$(shell echo $(1) | sed 's,^.\+/,,') $(FLATPAK_REF_BRANCH)
+
+.PHONY: $(1)-install
+$(1)-install: $(FLATPAK_ARTIFACTS_DIR)/$(shell echo $(1) | sed 's,^.\+/,,').flatpak
+	flatpak install $(if $(FLATPAK_USER),--user) $(FLATPAK_INSTALL_FLAGS) $$<
+
+.PHONY: $(1)-builder-export
+$(1)-builder-export: | $(FLATPAK_REPO_DIR)
+	flatpak run org.flatpak.Builder --repo=$(FLATPAK_REPO_DIR) --force-clean \
+		$(1)/$(FLATPAK_BUILD_DIR) $(1)/$$(patsubst %-builder-export,%,$$(@F)).yaml
+
+.PHONY: $(1)-builder-install
+$(1)-builder-install: | $(FLATPAK_REPO_DIR)
+	flatpak run org.flatpak.Builder --repo=$(FLATPAK_REPO_DIR) --force-clean \
+		--install $(if $(FLATPAK_USER),--user) $(1)/$(FLATPAK_BUILD_DIR) \
+		$(1)/$$(patsubst %-builder-install,%,$$(@F)).yaml
 endef
 
-$(foreach app,$(FLATPAK_APPS),$(eval $(call APP_RULE_GENERATOR,$(app))))
+$(foreach ref,$(FLATPAK_REFS),$(eval $(call REF_RULE_GENERATOR,$(ref))))

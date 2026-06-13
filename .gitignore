@@ -1,3 +1,5 @@
+.flatpak-builder/
 artifacts/
-*/**/Makefile
+app/*/build/
+runtime/*/build/
 *.sw[po]
