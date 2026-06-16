@@ -1,0 +1,43 @@
+id: dev.taskfile.Task.tool.toolbx
+default-branch: stable
+runtime: dev.taskfile.Task
+runtime-version: stable
+sdk: org.freedesktop.Sdk//25.08
+build-extension: true
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.golang
+build-options:
+  # build-args:
+  #   - --share=network
+  prefix: /app/tools/toolbx
+  # strip: true
+  prepend-path: /app/tools/toolbx/bin:/usr/lib/sdk/golang/bin
+modules:
+  - name: toolbx
+    config-opts:
+      - --debug
+      - -Dprofile_dir=/app/tools/toolbx/etc/profile.d
+      - -Dtmpfiles_dir=/app/tools/toolbx/etc/tmpfiles.d
+    buildsystem: meson
+    sources:
+      - type: archive
+        url: https://github.com/containers/toolbox/releases/download/0.3/toolbox-0.3-vendored.tar.xz
+        sha256: 0243bd995743ea73464426839ee80e2a13a8c529e3053292783f603b882dd125
+      - type: patch
+        path: patches/toolbox-0.3.patch
+    modules:
+      - name: shadow
+        config-opts:
+          - --without-libbsd
+        sources:
+          - type: archive
+            url: https://github.com/shadow-maint/shadow/releases/download/4.19.4/shadow-4.19.4.tar.gz
+            sha256: ba7e9aed1c5420203ac549583d6e6f485a819ac7505af9c7cd8c13b2013210b8
+      - name: go-md2man
+        buildsystem: simple
+        build-commands:
+          - install -D go-md2man ${FLATPAK_DEST}/bin/go-md2man
+          # - go install 'github.com/cpuguy83/go-md2man/v2@latest'
+        sources:
+          - type: file
+            path: bin/go-md2man

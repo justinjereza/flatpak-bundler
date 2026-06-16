@@ -1,0 +1,107 @@
+diff --git a/meson.build b/meson.build
+index f7507fb..9296a67 100644
+--- a/meson.build
++++ b/meson.build
+@@ -14,7 +14,12 @@ if not cc.has_argument('-print-file-name=libc.so')
+   error('C compiler does not support the -print-file-name argument.')
+ endif
+ 
+-subid_dep = cc.find_library('subid', has_headers: ['shadow/subid.h'])
++subid_dep = cc.find_library(
++  'subid',
++  dirs: [get_option('prefix')/'lib'],
++  has_headers: ['shadow/subid.h'],
++  header_include_directories: [include_directories(get_option('prefix')/'include')]
++)
+ 
+ go = find_program('go')
+ go_md2man = find_program('go-md2man')
+@@ -73,12 +78,12 @@ migration_path_for_coreos_toolbox = get_option('migration_path_for_coreos_toolbo
+ profiledir = get_option('profile_dir')
+ 
+ tmpfilesdir = get_option('tmpfiles_dir')
+-if tmpfilesdir == '' or not fs.exists('/run/.containerenv')
+-  systemd_dep = dependency('systemd')
+-
+-  if tmpfilesdir == ''
+-    tmpfilesdir = systemd_dep.get_variable(pkgconfig: 'tmpfilesdir')
++if tmpfilesdir == ''
++  systemd_dep = dependency('systemd', required: false)
++  if not systemd_dep.found()
++    error('`tmpfiles_dir` must be set when systemd is not available.')
+   endif
++  tmpfilesdir = systemd_dep.get_variable(pkgconfig: 'tmpfilesdir')
+ endif
+ 
+ toolbox_sh = files('toolbox')
+diff --git a/meson_post_install.py b/meson_post_install.py
+index e100e98..9d50ae2 100644
+--- a/meson_post_install.py
++++ b/meson_post_install.py
+@@ -19,10 +19,11 @@ import os
+ import subprocess
+ import sys
+ 
+-destdir = os.environ.get('DESTDIR', '')
+-euid = os.geteuid()
++if __name__ == '__main__':
++    if os.path.exists('/run/.containerenv'):
++        sys.exit()
+ 
+-if not destdir and not os.path.exists('/run/.containerenv') and euid == 0:
+-    subprocess.run(['systemd-tmpfiles', '--create'], check=True)
+-
+-sys.exit(0)
++    destdir = os.environ.get('DESTDIR')
++    euid = os.geteuid()
++    if destdir is None and euid == 0:
++        subprocess.run(['systemd-tmpfiles', '--create'], check=True)
+diff --git a/src/meson.build b/src/meson.build
+index c178bb3..f9a1ec2 100644
+--- a/src/meson.build
++++ b/src/meson.build
+@@ -118,19 +118,19 @@ if fishcompletionsdir != ''
+ )
+ endif
+ 
+-custom_target(
+-  'zsh-completion',
+-  capture: true,
+-  command: [
+-    meson_generate_completions_program,
+-    meson.current_source_dir(),
+-    'zsh',
+-  ],
+-  depends: [toolbox_go],
+-  install: true,
+-  install_dir: zshcompletionsdir,
+-  output: '_toolbox',
+-)
++#custom_target(
++#  'zsh-completion',
++#  capture: true,
++#  command: [
++#    meson_generate_completions_program,
++#    meson.current_source_dir(),
++#    'zsh',
++#  ],
++#  depends: [toolbox_go],
++#  install: true,
++#  install_dir: zshcompletionsdir,
++#  output: '_toolbox',
++#)
+ 
+ if shellcheck.found()
+   test('shellcheck src/go-build-wrapper', shellcheck, args: [go_build_wrapper_file])
+diff --git a/src/pkg/utils/utils_cgo.go b/src/pkg/utils/utils_cgo.go
+index 80c9c15..ff6c9df 100644
+--- a/src/pkg/utils/utils_cgo.go
++++ b/src/pkg/utils/utils_cgo.go
+@@ -24,6 +24,7 @@ import (
+ )
+ 
+ /*
++#cgo CFLAGS: -I/app/tools/toolbx/include
+ #cgo LDFLAGS: -ldl
+ 
+ #include <stdlib.h>
