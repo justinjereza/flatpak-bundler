@@ -10,7 +10,7 @@ cleanup-commands:
   - mkdir --parents ${FLATPAK_DEST}/tools
 finish-args:
   - --filesystem=xdg-run/podman
-  - --env=PATH=/app/tools/podman/bin:/app/bin:/usr/bin
+  - --env=PATH=/app/tools/toolbx/bin:/app/tools/podman/bin:/app/bin:/usr/bin
 modules:
   - name: task
     buildsystem: simple
