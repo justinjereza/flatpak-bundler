@@ -7,12 +7,18 @@ FLATPAK_RUNTIME_DIR ?= runtime
 FLATPAK_BUILD_DIR ?= build
 FLATPAK_ARTIFACTS_DIR ?= artifacts
 FLATPAK_REPO_DIR ?= $(FLATPAK_ARTIFACTS_DIR)/repo
+
+FLATPAK_BUILDER_VERBOSE ?= false
 FLATPAK_INSTALL_FLAGS ?= --assumeyes --or-update
 
 FLATPAK_REFS := $(filter-out %.disabled,$(patsubst %/,%,$(wildcard $(FLATPAK_APP_DIR)/*/ $(FLATPAK_RUNTIME_DIR)/*/)))
 
 ifneq ($(FLATPAK_USER), true)
 override undefine FLATPAK_USER
+endif
+
+ifneq ($(FLATPAK_BUILDER_VERBOSE), true)
+override undefine FLATPAK_BUILDER_VERBOSE
 endif
 
 .PHONY: all
@@ -66,11 +72,13 @@ $(1)-clean:
 
 .PHONY: $(1)-build
 $(1)-build:
-	flatpak run org.flatpak.Builder --build-only --force-clean $(1)/$(FLATPAK_BUILD_DIR) $(1)/$$(patsubst %-build,%,$$(@F)).yaml
+	flatpak run org.flatpak.Builder $(if $(FLATPAK_BUILDER_VERBOSE),--verbose) \
+		--build-only --force-clean $(1)/$(FLATPAK_BUILD_DIR) $(1)/$$(patsubst %-build,%,$$(@F)).yaml
 
 .PHONY: $(1)-finish
 $(1)-finish: $(1)-build
-	flatpak run org.flatpak.Builder --finish-only $(1)/$(FLATPAK_BUILD_DIR) $(1)/$$(patsubst %-finish,%,$$(@F)).yaml
+	flatpak run org.flatpak.Builder $(if $(FLATPAK_BUILDER_VERBOSE),--verbose) \
+		--finish-only $(1)/$(FLATPAK_BUILD_DIR) $(1)/$$(patsubst %-finish,%,$$(@F)).yaml
 
 .PHONY: $(1)-export
 $(1)-export: $(1)-finish | $(FLATPAK_REPO_DIR)
@@ -87,14 +95,15 @@ $(1)-install: $(FLATPAK_ARTIFACTS_DIR)/$(shell echo $(1) | sed 's,^.\+/,,').flat
 
 .PHONY: $(1)-builder-export
 $(1)-builder-export: | $(FLATPAK_REPO_DIR)
-	flatpak run org.flatpak.Builder --repo=$(FLATPAK_REPO_DIR) --force-clean \
-		$(1)/$(FLATPAK_BUILD_DIR) $(1)/$$(patsubst %-builder-export,%,$$(@F)).yaml
+	flatpak run org.flatpak.Builder $(if $(FLATPAK_BUILDER_VERBOSE),--verbose) \
+		--repo=$(FLATPAK_REPO_DIR) --force-clean $(1)/$(FLATPAK_BUILD_DIR) \
+		$(1)/$$(patsubst %-builder-export,%,$$(@F)).yaml
 
 .PHONY: $(1)-builder-install
 $(1)-builder-install: | $(FLATPAK_REPO_DIR)
-	flatpak run org.flatpak.Builder --repo=$(FLATPAK_REPO_DIR) --force-clean \
-		--install $(if $(FLATPAK_USER),--user) $(1)/$(FLATPAK_BUILD_DIR) \
-		$(1)/$$(patsubst %-builder-install,%,$$(@F)).yaml
+	flatpak run org.flatpak.Builder $(if $(FLATPAK_BUILDER_VERBOSE),--verbose) \
+	--repo=$(FLATPAK_REPO_DIR) --force-clean --install $(if $(FLATPAK_USER),--user) \
+	$(1)/$(FLATPAK_BUILD_DIR) $(1)/$$(patsubst %-builder-install,%,$$(@F)).yaml
 endef
 
 $(foreach ref,$(FLATPAK_REFS),$(eval $(call REF_RULE_GENERATOR,$(ref))))
