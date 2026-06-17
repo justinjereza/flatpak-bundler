@@ -11,6 +11,7 @@ cleanup-commands:
 finish-args:
   - --filesystem=xdg-run/podman
   - --env=PATH=/app/tools/toolbx/bin:/app/tools/podman/bin:/app/bin:/usr/bin
+  - --talk-name=org.freedesktop.Flatpak
 modules:
   - name: task
     buildsystem: simple
@@ -21,6 +22,14 @@ modules:
         url: https://github.com/go-task/task/releases/download/v3.51.1/task_linux_amd64.tar.gz
         sha256: da7e92f0ff961ef2aae7cfecbad8d1fd2a08d7b09ba968673adf7ff389b243b5
         strip-components: 0
+  - name: host-spawn
+    buildsystem: simple
+    build-commands:
+      - install -D host-spawn-x86_64 ${FLATPAK_DEST}/bin/host-spawn
+    sources:
+      - type: file
+        url: https://github.com/1player/host-spawn/releases/download/v1.6.2/host-spawn-x86_64
+        sha256: 077bc09a087292447ba17cfe2156a93f71bf56c4c6be8e38d3abe65c1240f34c
 
 # Bundling podman-remote is simpler but I'm leaving extensions here as an example and in case more are needed.
 add-extensions:
