@@ -10,7 +10,7 @@ cleanup-commands:
   - mkdir --parents ${FLATPAK_DEST}/shims ${FLATPAK_DEST}/tools
 finish-args:
   - --filesystem=xdg-run/podman
-  - --env=PATH=/app/shims/bin:/app/tools/podman/bin:/app/bin:/usr/bin
+  - --env=PATH=/app/shims/bin:/app/tools/bin:/app/bin:/usr/bin
   - --talk-name=org.freedesktop.Flatpak
 modules:
   - name: task
@@ -41,4 +41,5 @@ add-extensions:
   dev.taskfile.Task.tool:
     directory: tools
     version: stable
+    merge-dirs: bin
     subdirectories: true
