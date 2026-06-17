@@ -1,0 +1,12 @@
+id: dev.taskfile.Task.shim.toolbx
+default-branch: stable
+runtime: dev.taskfile.Task
+runtime-version: stable
+sdk: org.freedesktop.Sdk//25.08
+build-extension: true
+modules:
+  - name: toolbx
+    buildsystem: simple
+    build-commands:
+      - mkdir --parents ${FLATPAK_DEST}/bin
+      - ln --symbolic /app/bin/host-spawn ${FLATPAK_DEST}/bin/toolbox

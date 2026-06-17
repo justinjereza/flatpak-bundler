@@ -7,10 +7,10 @@ command: task
 build-options:
   strip: true
 cleanup-commands:
-  - mkdir --parents ${FLATPAK_DEST}/tools
+  - mkdir --parents ${FLATPAK_DEST}/shims ${FLATPAK_DEST}/tools
 finish-args:
   - --filesystem=xdg-run/podman
-  - --env=PATH=/app/tools/toolbx/bin:/app/tools/podman/bin:/app/bin:/usr/bin
+  - --env=PATH=/app/shims/bin:/app/tools/podman/bin:/app/bin:/usr/bin
   - --talk-name=org.freedesktop.Flatpak
 modules:
   - name: task
@@ -33,6 +33,11 @@ modules:
 
 # Bundling podman-remote is simpler but I'm leaving extensions here as an example and in case more are needed.
 add-extensions:
+  dev.taskfile.Task.shim:
+    directory: shims
+    version: stable
+    merge-dirs: bin
+    subdirectories: true
   dev.taskfile.Task.tool:
     directory: tools
     version: stable
