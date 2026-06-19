@@ -1,3 +1,7 @@
+MAKE_CONFIG_FILE = config.mk
+
+-include $(MAKE_CONFIG_FILE)
+
 FLATPAK_USER ?= true
 FLATPAK_REF_BRANCH ?= stable
 FLATPAK_SDK_BRANCH ?= 25.08

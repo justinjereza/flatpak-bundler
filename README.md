@@ -106,6 +106,21 @@ $ make FLATPAK_BUILDER_VERBOSE=true app/org.example.App-build
 Other variables that can be set and their defaults are at the top of
 the `Makefile`.
 
+### Configuration Files
+
+Variables may also be overridden by putting them in `config.mk`.
+
+```Makefile
+# Apps will be exported to this branch.
+FLATPAK_REF_BRANCH = 1.0
+```
+
+The name of the configuration file may be overridden.
+
+```sh
+$ make MAKE_CONFIG_FILE=my-other-config.mk app/org.example.App-install
+```
+
 Design Considerations
 ---------------------
 
