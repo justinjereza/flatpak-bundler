@@ -83,7 +83,8 @@ $ make app/org.example.App-builder-export
 $ make app/org.example.App-builder-install
 
 # Make a bundle.
-$ make artifacts/org.example.App.flatpak
+$ FLATPAK_REF_BRANCH=stable
+$ make artifacts/org.example.App-$FLATPAK_REF_BRANCH.flatpak
 ```
 
 ### Variables

@@ -43,7 +43,7 @@ distclean: clean
 export: $(foreach ref,$(FLATPAK_REFS),$(ref)-export)
 
 .PHONY: bundle
-bundle: $(foreach ref,$(FLATPAK_REFS),$(FLATPAK_ARTIFACTS_DIR)/$(shell echo $(ref) | sed 's,^.\+/,,').flatpak)
+bundle: $(foreach ref,$(FLATPAK_REFS),$(FLATPAK_ARTIFACTS_DIR)/$(shell echo $(ref) | sed 's,^.\+/,,')-$(FLATPAK_REF_BRANCH).flatpak)
 
 .PHONY: install
 install: $(foreach ref,$(FLATPAK_REFS),$(ref)-install)
@@ -88,13 +88,14 @@ $(1)-finish: $(1)-build
 $(1)-export: $(1)-finish | $(FLATPAK_REPO_DIR)
 	flatpak build-export $(FLATPAK_REPO_DIR) $(1)/$(FLATPAK_BUILD_DIR) $(FLATPAK_REF_BRANCH)
 
-$(FLATPAK_ARTIFACTS_DIR)/$(shell echo $(1) | sed 's,^.\+/,,').flatpak: RUNTIME := $(if $(findstring runtime/,$(1)),true)
-$(FLATPAK_ARTIFACTS_DIR)/$(shell echo $(1) | sed 's,^.\+/,,').flatpak: $(1)-export
+$(FLATPAK_ARTIFACTS_DIR)/$(shell echo $(1) | sed 's,^.\+/,,')-$(FLATPAK_REF_BRANCH).flatpak:\
+	RUNTIME := $(if $(findstring runtime/,$(1)),true)
+$(FLATPAK_ARTIFACTS_DIR)/$(shell echo $(1) | sed 's,^.\+/,,')-$(FLATPAK_REF_BRANCH).flatpak: $(1)-export
 	flatpak build-bundle $(FLATPAK_REPO_DIR) $$(if $$(RUNTIME),--runtime) $$@ \
 		$(shell echo $(1) | sed 's,^.\+/,,') $(FLATPAK_REF_BRANCH)
 
 .PHONY: $(1)-install
-$(1)-install: $(FLATPAK_ARTIFACTS_DIR)/$(shell echo $(1) | sed 's,^.\+/,,').flatpak
+$(1)-install: $(FLATPAK_ARTIFACTS_DIR)/$(shell echo $(1) | sed 's,^.\+/,,')-$(FLATPAK_REF_BRANCH).flatpak
 	flatpak install $(if $(FLATPAK_USER),--user) $(FLATPAK_INSTALL_FLAGS) $$<
 
 .PHONY: $(1)-builder-export
