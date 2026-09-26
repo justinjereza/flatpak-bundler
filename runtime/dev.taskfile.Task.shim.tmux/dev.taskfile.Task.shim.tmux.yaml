@@ -2,7 +2,7 @@ id: dev.taskfile.Task.shim.tmux
 default-branch: stable
 runtime: dev.taskfile.Task
 runtime-version: stable
-sdk: org.freedesktop.Sdk//25.08
+sdk: org.freedesktop.Sdk//26.08
 build-extension: true
 modules:
   - name: tmux
