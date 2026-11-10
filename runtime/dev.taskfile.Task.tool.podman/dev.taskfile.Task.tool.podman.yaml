@@ -14,5 +14,5 @@ modules:
       - ln --symbolic ${FLATPAK_DEST}/bin/podman-remote ${FLATPAK_DEST}/bin/podman
     sources:
       - type: archive
-        url: https://github.com/podman-container-tools/podman/releases/download/v6.1.2/podman-remote-static-linux_amd64.tar.gz
-        sha256: 6785e4dc11dad67000308749fed0f981698792309830a6b870bd5a97b3527182
+        url: https://github.com/podman-container-tools/podman/releases/download/v6.1.4/podman-remote-static-linux_amd64.tar.gz
+        sha256: af1f85c22214088a0a9986b9c82b4c9b5b74eda8ecaa6c8cca82b1a63f339b4a
