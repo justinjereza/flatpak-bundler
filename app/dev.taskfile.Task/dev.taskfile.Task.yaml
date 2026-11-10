@@ -19,8 +19,8 @@ modules:
       - install -D task ${FLATPAK_DEST}/bin/task
     sources:
       - type: archive
-        url: https://github.com/go-task/task/releases/download/v3.53.1/task_linux_amd64.tar.gz
-        sha256: a54a408f6861ff921f6e87774180db31bacd8c1e7c944ca696db9fea49a82fc7
+        url: https://github.com/go-task/task/releases/download/v3.54.0/task_linux_amd64.tar.gz
+        sha256: 680859dbb4d881a9c72d4d9a8f510825450849af8567deacd7302c01124416fb
         strip-components: 0
   - name: host-spawn
     buildsystem: simple
